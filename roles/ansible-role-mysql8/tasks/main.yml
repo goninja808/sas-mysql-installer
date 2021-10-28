@@ -1,0 +1,11 @@
+---
+- include_tasks: validations-initial.yml
+- include_tasks: mysql8_server.yml
+- name: Advise if SSH key was created
+  debug:
+    msg: item
+  with_items:
+    - SSH key created at {{ result_ssh_key_gen.filename }}
+  when:
+    - inventory_hostname in groups['kvmhost']
+    - result_ssh_key_gen.filename is defined and result_ssh_key_gen.filename

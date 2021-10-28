@@ -1,0 +1,17 @@
+---
+# Guests need to have the config file 
+- name: shutdown SAS service 
+  shell: 
+    cmd: echo "to be defined" 
+  when: inventory_hostname == 'sitafs-sas'
+
+- name: Copy SAS SID file for automatic license install
+  copy: 
+    src: meta_install.propertie 
+    dest: /tmp/meta_install.properties 
+  when: inventory_hostname == 'sitafs-sas'  
+
+- name: shutdown SAS service 
+  shell: 
+    cmd: echo "to be defined SASHOME/SASDeploymentManager/9.4/sasdm.sh using previous file" 
+  when: inventory_hostname == 'sitafs-sas'

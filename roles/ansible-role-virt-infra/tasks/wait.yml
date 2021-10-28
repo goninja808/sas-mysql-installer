@@ -1,0 +1,63 @@
+---
+# We run this against any VMs which are now in running state
+#- name: Wait for guests to be contactable
+#  wait_for_connection:
+#    timeout: 600
+#  when:
+#    - inventory_hostname not in groups['kvmhost']
+#    - virt_infra_state == "running"
+#
+
+- name: Wait for guests to be contactable via SSH
+  wait_for:
+    port: 22
+    host: "{{ inventory_hostname }}"
+    search_regex: OpenSSH
+    timeout: 600
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state is defined and virt_infra_state == "running"
+  delegate_to: "{{ kvmhost }}"
+
+- name: Get guest SSH fingerprints
+  shell: "set -o pipefail && ssh-keyscan {{ inventory_hostname }} {{ vm_ip }} | sort"
+  args:
+    executable: /bin/bash
+  delegate_to: "{{ kvmhost }}"
+  register: result_keyscan
+  changed_when: false
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state is defined and virt_infra_state == "running"
+
+- name: Add guest fingerprint to SSH known_hosts
+  blockinfile:
+    create: true
+    mode: 0600
+    state: present
+    path: "{{ hostvars[kvmhost].ansible_env.HOME }}/.ssh/known_hosts"
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
+    block: |-
+      {{ result_keyscan.stdout }}
+  become: false
+  delegate_to: "{{ kvmhost }}"
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - result_keyscan.stdout is defined and result_keyscan.stdout
+    - virt_infra_state | default(virt_infra_state) == "running"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true
+
+# This is not using wait_for module with path option anymore because it doesn't
+# work when kvmhost is remote
+- name: Wait for cloud-init to finish
+  shell: ssh {{ inventory_hostname }} stat /etc/cloud/cloud-init.disabled
+  register: result_wait_cloudinit
+  retries: 60
+  delay: 2
+  until: result_wait_cloudinit is succeeded
+  delegate_to: "{{ kvmhost }}"
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - virt_infra_state == "running"

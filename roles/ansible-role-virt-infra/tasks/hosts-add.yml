@@ -1,0 +1,54 @@
+---
+# These tasks needs to update the same file
+# Because multiple tasks are run in parellel, data can go missing
+# We need to either run this in serial
+# Or run this once only on one host with a look for all other hosts
+# Because serial is messy, I'm doing the latter
+# Thus, while this should be run against the kvmhost host, it will show one of your guests
+
+- name: Update /etc/hosts to resolve new VMs
+  blockinfile:
+    path: /etc/hosts
+    state: present
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
+    block: |-
+      {{ vm_ip }} {{ inventory_hostname }}
+  become: true
+  delegate_to: "{{ kvmhost }}"
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - vm_ip is defined and vm_ip
+    - virt_infra_state | default(virt_infra_state) == "running"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true
+
+- name: Add host to SSH config
+  blockinfile:
+    create: true
+    mode: 0600
+    state: present
+    path: "{{ hostvars[kvmhost].ansible_env.HOME }}/.ssh/config"
+    marker: "# {mark} {{ inventory_hostname }} managed by virt_infra Ansible playbook"
+    block: |-
+      Host {{ vm_ip }} {{ inventory_hostname }}
+        Hostname  {{ vm_ip }}
+        User {{ virt_infra_user | default(hostvars[kvmhost].ansible_env.USER) }}
+      {% if virt_infra_ssh_keys is not defined or virt_infra_ssh_keys is defined and not virt_infra_ssh_keys %}
+      {% if hostvars[kvmhost].result_ssh_key_list.files is defined and hostvars[kvmhost].result_ssh_key_list.files %}
+      {% for file in hostvars[kvmhost].result_ssh_key_list.files %}
+      {{ "  IdentityFile " + file.path.split('.pub')[0] }}
+      {% endfor %}
+      {% elif hostvars[kvmhost].result_ssh_key_gen.filename is defined and hostvars[kvmhost].result_ssh_key_gen.filename %}
+      {{ "  IdentityFile " + hostvars[kvmhost].result_ssh_key_gen.filename.split('.pub')[0] }}
+      {% endif %}
+      {% endif %}
+  become: false
+  delegate_to: "{{ kvmhost }}"
+  when:
+    - inventory_hostname not in groups['kvmhost']
+    - vm_ip is defined and vm_ip
+    - virt_infra_state | default(virt_infra_state) == "running"
+  throttle: 1
+#  with_items: "{{ play_hosts }}"
+#  run_once: true
