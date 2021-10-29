@@ -7,9 +7,9 @@
 
 - name: Copy SAS SID file for automatic license install
   copy: 
-    src: meta_install.propertie 
-    dest: /tmp/meta_install.properties 
-  when: inventory_hostname == 'sitafs-sas'  
+    src: meta_config.properties
+    dest: /tmp/meta_config.properties
+  when: inventory_hostname == 'sitafs-sas'
 
 - name: shutdown SAS service 
   shell: 

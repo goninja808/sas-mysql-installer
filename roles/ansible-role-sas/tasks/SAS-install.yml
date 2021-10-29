@@ -2,14 +2,14 @@
 # Guests need to have the config file 
 - name: Copy SAS setup file for automatic install
   copy: 
-    src: setup.sh 
-    dest: /tmp/setup.sh 
+    src: setup.sh
+    dest: /tmp/setup.sh
   when: inventory_hostname == 'sitafs-sas'
 
 - name: Copy SAS response file for automatic install
   copy: 
-    src: meta_install.propertie 
-    dest: /tmp/meta_install.properties 
+    src: meta_install.properties
+    dest: /tmp/meta_install.properties
   when: inventory_hostname == 'sitafs-sas'  
 
 # Guests need to have a KVM host to deploy to
@@ -20,7 +20,7 @@
 
 # Guests need to have a KVM host to deploy to
 - name: Run installer
-  shell: ./setup.sh -quiet -responsefile /tmp/meta_install.properties 
+  shell: /tmp/setup.sh -quiet -responsefile /tmp/meta_install.properties
   become: True
   when: inventory_hostname == 'sitafs-sas'
 

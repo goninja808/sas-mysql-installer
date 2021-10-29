@@ -7,7 +7,7 @@
 
 - name: Install mysql
   dnf:
-    name: "mysql-common,mysql,mysql-server,python3-PyMySQL"
+    name: "mysql-common,mysql,mysql-server"
     state: present
   become: true
   when: inventory_hostname == 'sitafs-mysql8'
