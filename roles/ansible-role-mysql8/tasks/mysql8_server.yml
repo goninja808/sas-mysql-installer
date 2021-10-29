@@ -1,4 +1,5 @@
 ---
+
 - name: Update DNF Package repository cache
   dnf:
     update_cache: True
@@ -7,16 +8,12 @@
 
 - name: Install mysql
   dnf:
-    name: "mysql-common,mysql,mysql-server"
+    name: "mysql-common,mysql"
     state: present
+    allowerasing: True
   become: true
   when: inventory_hostname == 'sitafs-mysql8'
         
-- name: Stop mysql-server
-  service: name=mysqld state=stopped
-  become: true
-  when: inventory_hostname == 'sitafs-mysql8'
-
 - name: create config directory  MySQL
   shell: mkdir /etc/mysql/conf.d
   become: True
@@ -48,14 +45,11 @@
     state: present
   when: inventory_hostname == 'sitafs-mysql8'
 
-
-
 - name: Check if mysql root password is enabled
   mysql_variables: login_user=root login_password="{{ database_root_password }}" variable=timestamp
   register: chktime
   ignore_errors: True
   when: inventory_hostname == 'sitafs-mysql8'
-
 
 - name: Set MySQL root Password
   mysql_user:
